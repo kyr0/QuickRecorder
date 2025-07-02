@@ -12,6 +12,8 @@ import AVFoundation
 import AVFAudio
 import VideoToolbox
 import AECAudioStream
+import HaishinKit
+import SRTHaishinKit
 
 extension AppDelegate {
     @objc func prepRecord(type: String, screens: SCDisplay?, windows: [SCWindow]?, applications: [SCRunningApplication]?, fastStart: Bool = false) {
@@ -141,6 +143,10 @@ extension AppDelegate {
         SCContext.timeOffset = CMTimeMake(value: 0, timescale: 0)
         SCContext.isPaused = false
         SCContext.isResume = false
+        
+        //if (SCContext.rtmpPusher == nil) {
+        //    SCContext.rtmpPusher = RTMPPusher(endpoint: "rtmp://127.0.0.1:1935/live", name: "live", streamKey: "");
+        //}
         
         let audioOnly = SCContext.streamType == .systemaudio
         
@@ -292,7 +298,47 @@ extension AppDelegate {
                 //SCContext.startTime = Date.now
                 if recordMic { startMicRecording() }
             }
+            /*
+            let mixer = MediaMixer()
+
+            guard
+                let session = await SessionBuilderFactory.shared
+                               .make(URL(string: "rtmp://127.0.0.1:1935/live"))?
+                               .build(),
+                let rtmp = await session.stream as? RTMPStream
+                    
+            else {
+                assertionFailure("unexpected stream type")
+                return
+            }
+            await mixer.addOutput(rtmp)
+
+            // register the bridge as SCStreamOutput, not the other way round!
+            let bridge = BridgeOutput(mixer: mixer)
+            try SCContext.stream.addStreamOutput(bridge,
+                                                 type: .screen,
+                                                 sampleHandlerQueue: .global())
+            */
+           
+            let mixer = MediaMixer()
+            SCContext.mixer = mixer
+
+            guard
+                let session = await SessionBuilderFactory.shared
+                               .make(URL(string:"rtmp://127.0.0.1:1935/live"))?
+                               .build(),
+                let rtmp = await session.stream as? RTMPStream
+            else {
+                assertionFailure("unexpected stream type")
+                return
+            }
+            SCContext.session = session
+            await mixer.addOutput(rtmp)          // 1️⃣ file writing keeps working
+            Task {
+                try? await SCContext.session?.connect(.ingest)
+            }
             try await SCContext.stream.startCapture()
+            //try await SCContext.rtmpPusher.publish()
         } catch {
             assertionFailure("capture failed".local)
             return
@@ -508,10 +554,6 @@ extension AppDelegate {
                 // Image exposure needs to be increased by one stop to match the original
                 ciImage = ciImage.applyingFilter("CIExposureAdjust", parameters: ["inputEV": 1.0])
                 
-                
-                
-                
-                
                 //                context.writeHEIF10Representation(of: ciImage, to: destination as! URL, colorSpace: colorSpace)
                 do{
                     // try context.writeHEIF10Representation(of:ciImage,
@@ -558,6 +600,9 @@ extension AppDelegate {
         }
         switch outputType {
         case .screen:
+            
+            Task { await SCContext.mixer?.append(SampleBuffer) }
+            
             if (SCContext.screen == nil && SCContext.window == nil && SCContext.application == nil) || SCContext.streamType == .systemaudio { break }
             guard let attachmentsArray = CMSampleBufferGetSampleAttachmentsArray(SampleBuffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
                   let attachments = attachmentsArray.first else { return }
@@ -596,18 +641,25 @@ extension AppDelegate {
                 if isPresenterON && !isCameraReady { break }
                 if SCContext.firstFrame == nil { SCContext.firstFrame = SampleBuffer }
                 SCContext.vwInput.append(SampleBuffer)
+                
+                //SCContext.rtmpPusher.append(SampleBuffer)
             }
             break
         case .audio:
+            
+            Task { await SCContext.mixer?.append(SampleBuffer) }
+            
             if SCContext.streamType == .systemaudio { // write directly to file if not video recording
                 hideMousePointer = true
                 if SCContext.vW != nil && SCContext.vW?.status == .writing, SCContext.startTime == nil {
                     SCContext.vW.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(SampleBuffer))
                 }
                 if SCContext.startTime == nil { SCContext.startTime = Date.now }
+                //SCContext.rtmpPusher.append(SampleBuffer)
                 guard let samples = SampleBuffer.asPCMBuffer else { return }
                 do { try SCContext.audioFile?.write(from: samples) }
                 catch { assertionFailure("audio file writing issue".local) }
+                
             } else {
                 if SCContext.lastPTS == nil { return }
                 if SCContext.awInput.isReadyForMoreMediaData { SCContext.awInput.append(SampleBuffer) }

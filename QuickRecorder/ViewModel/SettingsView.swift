@@ -29,8 +29,11 @@ struct SettingsView: View {
                 NavigationLink(destination: HotkeyView(), tag: "Hotkey", selection: $selectedItem) {
                     Label("Hotkey", image: "hotkey")
                 }
-                NavigationLink(destination: BlocklistView(), tag: "Blaoklist", selection: $selectedItem) {
+                NavigationLink(destination: BlocklistView(), tag: "Blacklist", selection: $selectedItem) {
                     Label("Blocklist", image: "blacklist")
+                }
+                NavigationLink(destination: BroadcastView(), tag: "Broadcast", selection: $selectedItem) {
+                    Label("Broadcast", image: "broadcast")
                 }
             }
             .listStyle(.sidebar)
@@ -285,6 +288,24 @@ struct BlocklistView: View {
                         .font(.footnote)
                         .multilineTextAlignment(.center)
                         .foregroundColor(Color.secondary)
+            }
+        }
+    }
+}
+
+struct BroadcastView: View {
+    @State private var streamURL: String  = ""
+    @State private var streamName: String = ""
+
+    var body: some View {
+        SForm {
+            SGroupBox(label: "Broadcast") {
+                // ── input fields ──
+                TextField("RTMP stream URL", text: $streamURL)
+                    .textFieldStyle(.roundedBorder)
+
+                TextField("Stream name", text: $streamName)
+                    .textFieldStyle(.roundedBorder)
             }
         }
     }

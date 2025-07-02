@@ -13,8 +13,50 @@ import UserNotifications
 import SwiftLAME
 import SwiftUI
 import AECAudioStream
+import HaishinKit
+
+/*
+final class BroadcastStreamOutput: NSObject, SCStreamOutput, SCStreamDelegate {
+    func stream(_ stream: SCStream,
+                didOutputSampleBuffer sampleBuffer: CMSampleBuffer,
+                of type: SCStreamOutputType) {
+
+        guard type == .screen, CMSampleBufferIsValid(sampleBuffer) else { return }
+
+        // Handle CMSampleBuffer here
+        process(sampleBuffer)
+    }
+
+    private func process(_ buffer: CMSampleBuffer) {
+        // your handling logic
+    }
+}
+*/
+
+/// Bridges ScreenCaptureKit frames into HaishinKit.
+final class BridgeOutput: NSObject, SCStreamOutput, @unchecked Sendable {
+    private let mixer: MediaMixer
+    init(mixer: MediaMixer) { self.mixer = mixer }
+
+    func stream(_ stream: SCStream,
+                didOutputSampleBuffer sbuf: CMSampleBuffer,
+                of type: SCStreamOutputType)
+    {
+        guard type == .screen, CMSampleBufferIsValid(sbuf) else { return }
+        Task { await mixer.append(sbuf) }              // track 0 video
+    }
+}
 
 class SCContext {
+    
+    //static var session: (any Session)?
+    //static var mixer = MediaMixer()
+    //static var broadcastStreamOutput: BroadcastStreamOutput!
+    
+    static var mixer:   MediaMixer?
+    static var bridge:  BridgeOutput?
+    static var session: (any Session)?            // concrete, not “any HKStream”
+    
     static var trimingList = [URL]()
     static var firstFrame: CMSampleBuffer?
     static var autoStop = 0
@@ -45,6 +87,7 @@ class SCContext {
     static var startTime: Date?
     static var timePassed: TimeInterval = 0
     static var stream: SCStream!
+    //static var rtmpPusher: RTMPPusher!
     static var screen: SCDisplay?
     static var window: [SCWindow]?
     static var application: [SCRunningApplication]?

@@ -15,6 +15,8 @@ import KeyboardShortcuts
 import ServiceManagement
 import CoreMediaIO
 import Sparkle
+import HaishinKit
+import SRTHaishinKit
 
 let isMacOS12 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 12
 let isMacOS14 = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 14
@@ -41,7 +43,7 @@ var updaterController: SPUStandardUpdaterController!
 struct QuickRecorderApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     //private let updaterController: SPUStandardUpdaterController
-        
+    
     init() {
         // If you want to start the updater manually, pass false to startingUpdater and call .startUpdater() later
         // This is where you can also pass an updater delegate if you need one
@@ -343,6 +345,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SCStreamDelegate, SCStreamOu
             }
         }
         updateStatusBar()
+        
+        Task {
+            await SessionBuilderFactory.shared.register(RTMPSessionFactory())
+            await SessionBuilderFactory.shared.register(SRTSessionFactory())
+        }
     }
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
@@ -501,7 +508,7 @@ func createAlert(level: NSAlert.Style = .warning, title: String, message: String
 }
 
 func showAlertSyncOnMainThread(level: NSAlert.Style = .warning, title: String, message: String, button1: String, button2: String = "", width: Int? = nil) -> NSApplication.ModalResponse {
-    var response: NSApplication.ModalResponse = .abort
+    var response: NSApplication.ModalResponse = .abortcompletion
     let semaphore = DispatchSemaphore(value: 0)
     
     DispatchQueue.main.async {

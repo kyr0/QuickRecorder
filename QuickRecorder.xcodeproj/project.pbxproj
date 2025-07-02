@@ -45,6 +45,10 @@
 		18FEBDAC2BD01E82003F09BC /* WinSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18FEBDAB2BD01E82003F09BC /* WinSelector.swift */; };
 		18FEBDAE2BD10ED1003F09BC /* ScreenSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18FEBDAD2BD10ED1003F09BC /* ScreenSelector.swift */; };
 		18FEBDB02BD2C0D1003F09BC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18FEBDAF2BD2C0D1003F09BC /* SettingsView.swift */; };
+		84A95F3D2E11E799006FA281 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84A95F3C2E11E799006FA281 /* HaishinKit */; };
+		84A95F3F2E11E799006FA281 /* MoQTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84A95F3E2E11E799006FA281 /* MoQTHaishinKit */; };
+		84A95F412E11E799006FA281 /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84A95F402E11E799006FA281 /* SRTHaishinKit */; };
+		84A95FA12E11FEA3006FA281 /* RTMPPusher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A95FA02E11FEA3006FA281 /* RTMPPusher.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -91,6 +95,7 @@
 		18FEBDAB2BD01E82003F09BC /* WinSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinSelector.swift; sourceTree = "<group>"; };
 		18FEBDAD2BD10ED1003F09BC /* ScreenSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSelector.swift; sourceTree = "<group>"; };
 		18FEBDAF2BD2C0D1003F09BC /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		84A95FA02E11FEA3006FA281 /* RTMPPusher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTMPPusher.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,9 +105,12 @@
 			files = (
 				184506CE2C69213400AFDA45 /* MatrixColorSelector in Frameworks */,
 				181724052BE3BEA600F5F539 /* Sparkle in Frameworks */,
+				84A95F412E11E799006FA281 /* SRTHaishinKit in Frameworks */,
 				18AFF77B2D5F91F800C795A1 /* KeyboardShortcuts in Frameworks */,
 				18F40B492BFB988A00F0AC70 /* SwiftLAME in Frameworks */,
+				84A95F3D2E11E799006FA281 /* HaishinKit in Frameworks */,
 				185582A62D1D1CC100F0CF47 /* AECAudioStream in Frameworks */,
+				84A95F3F2E11E799006FA281 /* MoQTHaishinKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,6 +158,7 @@
 		18D3BDE92BCE5DC1006CFFC0 /* QuickRecorder */ = {
 			isa = PBXGroup;
 			children = (
+				84A95FA02E11FEA3006FA281 /* RTMPPusher.swift */,
 				189BD5E82BDE34B80056D06C /* InfoPlist.strings */,
 				189BD5F62BDFDF200056D06C /* Info.plist */,
 				18D3BDEA2BCE5DC1006CFFC0 /* QuickRecorderApp.swift */,
@@ -221,6 +230,9 @@
 				184506CD2C69213400AFDA45 /* MatrixColorSelector */,
 				185582A52D1D1CC100F0CF47 /* AECAudioStream */,
 				18AFF77A2D5F91F800C795A1 /* KeyboardShortcuts */,
+				84A95F3C2E11E799006FA281 /* HaishinKit */,
+				84A95F3E2E11E799006FA281 /* MoQTHaishinKit */,
+				84A95F402E11E799006FA281 /* SRTHaishinKit */,
 			);
 			productName = QuickRecorder;
 			productReference = 18D3BDE72BCE5DC1006CFFC0 /* QuickRecorder.app */;
@@ -259,6 +271,7 @@
 				184506CC2C69213400AFDA45 /* XCRemoteSwiftPackageReference "MatrixColorSelector" */,
 				185582A42D1D1CC100F0CF47 /* XCRemoteSwiftPackageReference "AECAudioStream" */,
 				18AFF7792D5F91F800C795A1 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				84A95F3B2E11E799006FA281 /* XCRemoteSwiftPackageReference "HaishinKit" */,
 			);
 			productRefGroup = 18D3BDE82BCE5DC1006CFFC0 /* Products */;
 			projectDirPath = "";
@@ -295,6 +308,7 @@
 				189BD5F52BDF8A800056D06C /* CameraOverlayer.swift in Sources */,
 				18F1A0E22BD3E4C000DB102C /* AreaSelector.swift in Sources */,
 				18FDFC8E2BDA435F0020E685 /* ScreenMagnifier.swift in Sources */,
+				84A95FA12E11FEA3006FA281 /* RTMPPusher.swift in Sources */,
 				187966FA2BD5639D003DB1B2 /* MousePointer.swift in Sources */,
 				184CAEC92BDDEC6800D61D57 /* AppBlockSelector.swift in Sources */,
 				184CAEC72BDCCC2300D61D57 /* AVContext.swift in Sources */,
@@ -488,15 +502,16 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 169;
+				CURRENT_PROJECT_VERSION = 170;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"QuickRecorder/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=macosx*]" = L4T783637F;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = UDEYSPVEQ3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = QuickRecorder/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = QuickRecorderDev;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "QuickRecorder needs this permission to record your camera and mobile device.";
@@ -507,8 +522,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 1.6.9;
-				PRODUCT_BUNDLE_IDENTIFIER = com.lihaoyun6.QuickRecorder;
+				MARKETING_VERSION = 1.6.10;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lihaoyun6.QuickRecorderDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -525,15 +540,16 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 169;
+				CURRENT_PROJECT_VERSION = 170;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"QuickRecorder/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=macosx*]" = L4T783637F;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = UDEYSPVEQ3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = QuickRecorder/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = QuickRecorderDev;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "QuickRecorder needs this permission to record your camera and mobile device.";
@@ -544,8 +560,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 1.6.9;
-				PRODUCT_BUNDLE_IDENTIFIER = com.lihaoyun6.QuickRecorder;
+				MARKETING_VERSION = 1.6.10;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lihaoyun6.QuickRecorderDev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -617,6 +633,14 @@
 				revision = e8256a8151594f47f103c742f684253c6c44871d;
 			};
 		};
+		84A95F3B2E11E799006FA281 /* XCRemoteSwiftPackageReference "HaishinKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/HaishinKit/HaishinKit.swift";
+			requirement = {
+				kind = revision;
+				revision = d211b0f16d2acbb52c4b4d5e93491f496925a33d;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -644,6 +668,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 18F40B472BFB988A00F0AC70 /* XCRemoteSwiftPackageReference "SwiftLAME" */;
 			productName = SwiftLAME;
+		};
+		84A95F3C2E11E799006FA281 /* HaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84A95F3B2E11E799006FA281 /* XCRemoteSwiftPackageReference "HaishinKit" */;
+			productName = HaishinKit;
+		};
+		84A95F3E2E11E799006FA281 /* MoQTHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84A95F3B2E11E799006FA281 /* XCRemoteSwiftPackageReference "HaishinKit" */;
+			productName = MoQTHaishinKit;
+		};
+		84A95F402E11E799006FA281 /* SRTHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84A95F3B2E11E799006FA281 /* XCRemoteSwiftPackageReference "HaishinKit" */;
+			productName = SRTHaishinKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
