@@ -294,18 +294,35 @@ struct BlocklistView: View {
 }
 
 struct BroadcastView: View {
-    @State private var streamURL: String  = ""
-    @State private var streamName: String = ""
+    @AppStorage("enableRTMPStreaming") private var enableRTMPStreaming: Bool = false
+    @AppStorage("rtmpURL") private var rtmpURL: String = "rtmp://127.0.0.1:1935/live"
+    @AppStorage("streamKey") private var streamKey: String = "live"
 
     var body: some View {
         SForm {
             SGroupBox(label: "Broadcast") {
+                // ── enable streaming ──
+                Toggle("Enable RTMP Streaming", isOn: $enableRTMPStreaming)
+                
                 // ── input fields ──
-                TextField("RTMP stream URL", text: $streamURL)
+                TextField("RTMP stream URL", text: $rtmpURL)
                     .textFieldStyle(.roundedBorder)
+                    .disabled(!enableRTMPStreaming)
 
-                TextField("Stream name", text: $streamName)
+                TextField("Stream key", text: $streamKey)
                     .textFieldStyle(.roundedBorder)
+                    .disabled(!enableRTMPStreaming)
+                
+                if enableRTMPStreaming {
+                    HStack {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.blue)
+                        Text("Full URL will be: \(rtmpURL)/\(streamKey)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 4)
+                }
             }
         }
     }

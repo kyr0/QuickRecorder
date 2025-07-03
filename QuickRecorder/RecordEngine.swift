@@ -321,12 +321,14 @@ extension AppDelegate {
             // Create RTMP session using SessionBuilderFactory (like the example)
             // Check if RTMP streaming is enabled and configured
             let enableRTMPStreaming = ud.bool(forKey: "enableRTMPStreaming")
-            let rtmpURL = ud.string(forKey: "rtmpURL") ?? "rtmp://127.0.0.1:1935/live"
+            let rtmpBaseURL = ud.string(forKey: "rtmpURL") ?? "rtmp://127.0.0.1:1935/live"
+            let streamKey = ud.string(forKey: "streamKey") ?? "live"
+            let fullURL = "\(rtmpBaseURL)/\(streamKey)"
             
             if enableRTMPStreaming {
-                guard let url = URL(string: rtmpURL),
+                guard let url = URL(string: fullURL),
                       let session = await SessionBuilderFactory.shared.make(url)?.build() else {
-                    print("Failed to create RTMP session with URL: \(rtmpURL)")
+                    print("Failed to create RTMP session with URL: \(fullURL)")
                     return
                 }
                 
@@ -342,7 +344,7 @@ extension AppDelegate {
                 Task {
                     do {
                         try await session.connect(.ingest)
-                        print("Successfully connected to RTMP endpoint: \(rtmpURL)")
+                        print("Successfully connected to RTMP endpoint: \(fullURL)")
                     } catch {
                         print("Failed to connect to RTMP endpoint: \(error)")
                     }
