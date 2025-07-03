@@ -328,7 +328,7 @@ struct BroadcastView: View {
                     .textFieldStyle(.roundedBorder)
                     .disabled(!enableRTMPStreaming)
 
-                TextField("Stream key", text: $streamKey)
+                SecureField("Stream key", text: $streamKey)
                     .textFieldStyle(.roundedBorder)
                     .disabled(!enableRTMPStreaming)
                 
