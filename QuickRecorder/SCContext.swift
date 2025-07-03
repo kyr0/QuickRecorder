@@ -71,6 +71,7 @@ class SCContext {
     static var isPaused = false
     static var isResume = false
     static var isSkipFrame = false
+    static var micRecordingStarted = false
     static var lastPTS: CMTime?
     static var timeOffset = CMTimeMake(value: 0, timescale: 0)
     static var screenArea: NSRect?
@@ -376,6 +377,7 @@ class SCContext {
         recordCam = ""
         recordDevice = ""
         isMagnifierEnabled = false
+        micRecordingStarted = false
         mousePointer.orderOut(nil)
         screenMagnifier.orderOut(nil)
         AppDelegate.shared.stopGlobalMouseMonitor()
@@ -384,6 +386,16 @@ class SCContext {
         
         if stream != nil { stream.stopCapture() }
         stream = nil
+        
+        // Close RTMP session if active
+        if let rtmpSession = session {
+            Task {
+                try? await rtmpSession.close()
+                print("RTMP session closed")
+            }
+        }
+        session = nil
+        mixer = nil
         if ud.bool(forKey: "recordMic") {
             micInput.markAsFinished()
             AudioRecorder.shared.stop()

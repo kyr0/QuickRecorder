@@ -292,25 +292,63 @@ extension AppDelegate {
                 initVideo(conf: conf)
             } else {
                 //SCContext.startTime = Date.now
-                if recordMic { startMicRecording() }
+                if recordMic && SCContext.streamType == .systemaudio { 
+                    // For audio-only recording with mic, startMicRecording will be called
+                    // when the first system audio sample arrives and starts the session
+                } else if recordMic {
+                    // For other cases where mic is needed but no video
+                    let sampleRate = SCContext.getSampleRate() ?? 48000
+                    let settings = SCContext.updateAudioSettings(rate: sampleRate)
+                    
+                    SCContext.micInput = AVAssetWriterInput(mediaType: AVMediaType.audio, outputSettings: settings)
+                    SCContext.micInput.expectsMediaDataInRealTime = true
+                    if SCContext.vW?.canAdd(SCContext.micInput) == true { SCContext.vW.add(SCContext.micInput) }
+                    SCContext.vW?.startWriting()
+                    SCContext.micRecordingStarted = true
+                    startMicRecording()
+                }
             }
            
             let mixer = MediaMixer()
             SCContext.mixer = mixer
 
-            guard
-                let session = await SessionBuilderFactory.shared
-                               .make(URL(string:"rtmp://127.0.0.1:1935/live"))?
-                               .build(),
-                let rtmp = await session.stream as? RTMPStream
-            else {
-                assertionFailure("unexpected stream type")
-                return
-            }
-            SCContext.session = session
-            await mixer.addOutput(rtmp)          // 1️⃣ file writing keeps working
-            Task {
-                try? await SCContext.session?.connect(.ingest)
+            // Configure mixer for offscreen video mixing (like the example)
+            var videoMixerSettings = await mixer.videoMixerSettings
+            videoMixerSettings.mode = .offscreen
+            videoMixerSettings.mainTrack = 0  // Screen capture will be on track 0
+            await mixer.setVideoMixerSettings(videoMixerSettings)
+
+            // Create RTMP session using SessionBuilderFactory (like the example)
+            // Check if RTMP streaming is enabled and configured
+            let enableRTMPStreaming = ud.bool(forKey: "enableRTMPStreaming")
+            let rtmpURL = ud.string(forKey: "rtmpURL") ?? "rtmp://127.0.0.1:1935/live"
+            
+            if enableRTMPStreaming {
+                guard let url = URL(string: rtmpURL),
+                      let session = await SessionBuilderFactory.shared.make(url)?.build() else {
+                    print("Failed to create RTMP session with URL: \(rtmpURL)")
+                    return
+                }
+                
+                guard let rtmpStream = await session.stream as? RTMPStream else {
+                    print("Failed to get RTMP stream from session")
+                    return
+                }
+                
+                SCContext.session = session
+                await mixer.addOutput(rtmpStream)
+                
+                // Connect to RTMP endpoint
+                Task {
+                    do {
+                        try await session.connect(.ingest)
+                        print("Successfully connected to RTMP endpoint: \(rtmpURL)")
+                    } catch {
+                        print("Failed to connect to RTMP endpoint: \(error)")
+                    }
+                }
+            } else {
+                print("RTMP streaming is disabled")
             }
             try await SCContext.stream.startCapture()
             //try await SCContext.rtmpPusher.publish()
@@ -451,7 +489,7 @@ extension AppDelegate {
             SCContext.micInput = AVAssetWriterInput(mediaType: AVMediaType.audio, outputSettings: settings)
             SCContext.micInput.expectsMediaDataInRealTime = true
             if SCContext.vW.canAdd(SCContext.micInput) { SCContext.vW.add(SCContext.micInput) }
-            startMicRecording()
+            // Don't start mic recording here - wait for video session to start
         }
         SCContext.vW.startWriting()
     }
@@ -467,7 +505,7 @@ extension AppDelegate {
                 }
                 try? SCContext.AECEngine.startAudioStream(enableAEC: enableAEC, duckingLevel: level, audioBufferHandler: { pcmBuffer in
                     if SCContext.isPaused || SCContext.startTime == nil { return }
-                    if SCContext.micInput.isReadyForMoreMediaData {
+                    if SCContext.micInput.isReadyForMoreMediaData && SCContext.vW?.status == .writing && SCContext.vW?.status != .unknown {
                         SCContext.micInput.append(pcmBuffer.asSampleBuffer!)
                     }
                 })
@@ -476,7 +514,7 @@ extension AppDelegate {
                 let inputFormat = input.inputFormat(forBus: 0)
                 input.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { buffer, time in
                     if SCContext.isPaused || SCContext.startTime == nil { return }
-                    if SCContext.micInput.isReadyForMoreMediaData {
+                    if SCContext.micInput.isReadyForMoreMediaData && SCContext.vW?.status == .writing && SCContext.vW?.status != .unknown {
                         SCContext.micInput.append(buffer.asSampleBuffer!)
                     }
                 }
@@ -576,7 +614,7 @@ extension AppDelegate {
         switch outputType {
         case .screen:
             
-            Task { await SCContext.mixer?.append(SampleBuffer) }
+            Task { await SCContext.mixer?.append(SampleBuffer, track: 0) }
             
             if (SCContext.screen == nil && SCContext.window == nil && SCContext.application == nil) || SCContext.streamType == .systemaudio { break }
             guard let attachmentsArray = CMSampleBufferGetSampleAttachmentsArray(SampleBuffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
@@ -588,6 +626,12 @@ extension AppDelegate {
             if SCContext.vW != nil && SCContext.vW?.status == .writing, SCContext.startTime == nil {
                 SCContext.startTime = Date.now
                 SCContext.vW.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(SampleBuffer))
+                
+                // Start microphone recording now that the session has started
+                if recordMic && SCContext.micInput != nil && !SCContext.micRecordingStarted {
+                    SCContext.micRecordingStarted = true
+                    startMicRecording()
+                }
             }
             if (SCContext.timeOffset.value > 0) { SampleBuffer = SCContext.adjustTime(sample: SampleBuffer, by: SCContext.timeOffset) ?? sampleBuffer }
             var pts = CMSampleBufferGetPresentationTimeStamp(SampleBuffer)
@@ -620,12 +664,18 @@ extension AppDelegate {
             break
         case .audio:
             
-            Task { await SCContext.mixer?.append(SampleBuffer) }
+            Task { await SCContext.mixer?.append(SampleBuffer, track: 0) }
             
             if SCContext.streamType == .systemaudio { // write directly to file if not video recording
                 hideMousePointer = true
                 if SCContext.vW != nil && SCContext.vW?.status == .writing, SCContext.startTime == nil {
                     SCContext.vW.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(SampleBuffer))
+                    
+                    // Start microphone recording now that the session has started
+                    if recordMic && SCContext.micInput != nil && !SCContext.micRecordingStarted {
+                        SCContext.micRecordingStarted = true
+                        startMicRecording()
+                    }
                 }
                 if SCContext.startTime == nil { SCContext.startTime = Date.now }
                 guard let samples = SampleBuffer.asPCMBuffer else { return }
@@ -714,7 +764,7 @@ class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         if SCContext.isPaused || SCContext.startTime == nil { return }
-        if SCContext.micInput.isReadyForMoreMediaData {
+        if SCContext.micInput.isReadyForMoreMediaData && SCContext.vW?.status == .writing && SCContext.vW?.status != .unknown {
             SCContext.micInput.append(sampleBuffer)
         }
     }
