@@ -531,6 +531,7 @@ extension AppDelegate {
                         SCContext.micInput.append(pcmBuffer.asSampleBuffer!)
                     }
                 })
+                SCContext.aecEngineStarted = true
             } else {
                 let input = SCContext.audioEngine.inputNode
                 let inputFormat = input.inputFormat(forBus: 0)

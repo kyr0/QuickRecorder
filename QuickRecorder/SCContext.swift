@@ -72,6 +72,7 @@ class SCContext {
     static var isResume = false
     static var isSkipFrame = false
     static var micRecordingStarted = false
+    static var aecEngineStarted = false
     static var lastPTS: CMTime?
     static var timeOffset = CMTimeMake(value: 0, timescale: 0)
     static var screenArea: NSRect?
@@ -378,6 +379,7 @@ class SCContext {
         recordDevice = ""
         isMagnifierEnabled = false
         micRecordingStarted = false
+        aecEngineStarted = false
         mousePointer.orderOut(nil)
         screenMagnifier.orderOut(nil)
         AppDelegate.shared.stopGlobalMouseMonitor()
@@ -397,18 +399,24 @@ class SCContext {
         session = nil
         mixer = nil
         if ud.bool(forKey: "recordMic") {
-            micInput.markAsFinished()
+            // Only mark input as finished if we're recording to file
+            if ud.bool(forKey: "enableRecording") && micInput != nil {
+                micInput.markAsFinished()
+            }
             AudioRecorder.shared.stop()
             audioEngine.inputNode.removeTap(onBus: 0)
             audioEngine.stop()
             //DispatchQueue.global().async { try? audioEngine.inputNode.setVoiceProcessingEnabled(false) }
-            if ud.bool(forKey: "enableAEC") { try? AECEngine.stopAudioUnit() }
+            if aecEngineStarted {
+                try? AECEngine.stopAudioUnit()
+                aecEngineStarted = false
+            }
         }
-        if streamType != .systemaudio {
+        if streamType != .systemaudio && ud.bool(forKey: "enableRecording") && vW != nil {
             let dispatchGroup = DispatchGroup()
             dispatchGroup.enter()
-            vwInput.markAsFinished()
-            if #available(macOS 13, *) { awInput.markAsFinished() }
+            if vwInput != nil { vwInput.markAsFinished() }
+            if #available(macOS 13, *) { if awInput != nil { awInput.markAsFinished() } }
             vW.finishWriting {
                 if vW.status != .completed {
                     print("Video writing failed with status: \(vW.status), error: \(String(describing: vW.error))")
@@ -440,7 +448,9 @@ class SCContext {
             }
             dispatchGroup.wait()
         } else {
-            if ud.bool(forKey: "recordMic") { vW.finishWriting {} }
+            if ud.bool(forKey: "recordMic") && ud.bool(forKey: "enableRecording") && vW != nil { 
+                vW.finishWriting {} 
+            }
         }
         
         DispatchQueue.main.async {
@@ -455,7 +465,7 @@ class SCContext {
         
         audioFile = nil // close audio file
         audioFile2 = nil // close audio file2
-        if streamType == .systemaudio {
+        if streamType == .systemaudio && ud.bool(forKey: "enableRecording") {
             if ud.string(forKey: "audioFormat") == AudioFormat.mp3.rawValue && !ud.bool(forKey: "recordMic") {
                 Task {
                     let outPutUrl = (String(filePath.dropLast(4)) + ".mp3").url
@@ -499,6 +509,9 @@ class SCContext {
                     }
                 }
             }
+        } else if !ud.bool(forKey: "enableRecording") && ud.bool(forKey: "enableRTMPStreaming") {
+            // Streaming-only mode completed
+            showNotification(title: "Streaming Stopped".local, body: "RTMP streaming has been stopped".local, id: "quickrecorder.streaming.stopped.\(UUID().uuidString)")
         }
         
         isPaused = false
