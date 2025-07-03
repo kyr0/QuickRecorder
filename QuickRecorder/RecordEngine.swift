@@ -15,6 +15,9 @@ import AECAudioStream
 import HaishinKit
 import SRTHaishinKit
 
+import AudioToolbox   // for kAudioFormatMPEG4AAC
+
+
 extension AppDelegate {
     @objc func prepRecord(type: String, screens: SCDisplay?, windows: [SCWindow]?, applications: [SCRunningApplication]?, fastStart: Bool = false) {
         switch type {
@@ -333,7 +336,7 @@ extension AppDelegate {
             let fullURL = "\(rtmpBaseURL)/\(streamKey)"
             
             if enableRTMPStreaming {
-                // Only create mixer when streaming is enabled
+                // Use single-track audio mixing for better compatibility
                 let mixer = MediaMixer(multiTrackAudioMixingEnabled: false)
                 SCContext.mixer = mixer
 
@@ -343,13 +346,21 @@ extension AppDelegate {
                 videoMixerSettings.mainTrack = 0  // Screen capture will be on track 0
                 await mixer.setVideoMixerSettings(videoMixerSettings)
                 
-                // Configure audio mixer for single-track output (all audio mixed to one track)
+                // Configure audio mixer for single-track mixing (all audio on track 0)
                 var audioMixerSettings = await mixer.audioMixerSettings
-                audioMixerSettings.mainTrack = 0  // All audio will be mixed into track 0
+                audioMixerSettings.mainTrack = 0  // All audio will be sent to track 0
+                audioMixerSettings.isMuted = false
                 // Configure track settings for proper mixing
-                audioMixerSettings.tracks[0] = AudioMixerTrackSettings(volume: 1.0, isMuted: false)  // Mixed output
+                audioMixerSettings.tracks[0] = AudioMixerTrackSettings(volume: 1.0, isMuted: false, channelMap: [0])  // mic
+                audioMixerSettings.tracks[1] = AudioMixerTrackSettings(volume: 1.0, isMuted: false, channelMap: [0, 1])  // system audio
                 await mixer.setAudioMixerSettings(audioMixerSettings)
-                print("Audio mixer configured for single-track output: all audio mixed to track 0")
+                await mixer.setMonitoringEnabled(true)
+                print("Audio mixer configured: mainTrack=0, single-track mixing enabled, all audio on track 0")
+                
+                // DEBUG: Check if mixer is properly configured
+                let currentSettings = await mixer.audioMixerSettings
+                print("🔍 [DEBUG] Audio mixer settings: mainTrack=\(currentSettings.mainTrack), tracks=\(currentSettings.tracks.keys.sorted())")
+                print("🔍 [DEBUG] Multi-track audio mixing enabled: \(await mixer.isMultiTrackAudioMixingEnabled)")
 
                 // Create RTMP session using SessionBuilderFactory (like the example)
                 guard let url = URL(string: fullURL),
@@ -365,14 +376,15 @@ extension AppDelegate {
                 
                 SCContext.session = session
                 await mixer.addOutput(rtmpStream)
+                print("✅ RTMP stream added as mixer output")
                 
                 // Connect to RTMP endpoint
                 Task {
                     do {
                         try await session.connect(.ingest)
-                        print("Successfully connected to RTMP endpoint: \(fullURL)")
+                        print("✅ Successfully connected to RTMP endpoint: \(fullURL)")
                     } catch {
-                        print("Failed to connect to RTMP endpoint: \(error)")
+                        print("❌ Failed to connect to RTMP endpoint: \(error)")
                     }
                 }
             } else {
@@ -552,7 +564,7 @@ extension AppDelegate {
                         Task { 
                             await SCContext.mixer?.append(sampleBuffer, track: 0) 
                             if SCContext.mixer != nil {
-                                print("Microphone audio sent to mixer track 0 (AEC mode)")
+                                print("📣 [MIC-AEC] Microphone audio sent to mixer track 0 - format: \(pcmBuffer.format), frames: \(pcmBuffer.frameLength)")
                             }
                         }
                     }
@@ -575,9 +587,11 @@ extension AppDelegate {
                 input.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { buffer, time in
                     if SCContext.isPaused || SCContext.startTime == nil { return }
                     
-                    // Always send microphone audio to mixer for streaming on track 1 (separate from system audio)
+                    // Always send microphone audio to mixer for streaming on track 0 (mixed with system audio)
                     if let sampleBuffer = buffer.asSampleBuffer {
-                        Task { await SCContext.mixer?.append(sampleBuffer, track: 1) }
+                        print("📣 [MIC] Sending mic audio to mixer track 0 - format: \(buffer.format), frames: \(buffer.frameLength)")
+                        Task { await SCContext.mixer?.append(sampleBuffer, track: 0) }
+                        
                     }
                     
                     // Always write to file if recording is enabled and we have the necessary components
@@ -748,9 +762,11 @@ extension AppDelegate {
             
             // Send system audio to mixer for streaming on track 0
             Task { 
-                await SCContext.mixer?.append(SampleBuffer, track: 0) 
+                await SCContext.mixer?.append(SampleBuffer, track: 1) 
                 if SCContext.mixer != nil {
-                    print("System audio sent to mixer track 0")
+                    let audioFormat = CMSampleBufferGetFormatDescription(SampleBuffer)
+                    let sampleCount = CMSampleBufferGetNumSamples(SampleBuffer)
+                    print("🔊 [SYS] System audio sent to mixer track 0 - samples: \(sampleCount), format: \(audioFormat?.audioFormatList.first.debugDescription ?? "unknown")")
                 }
             }
             
@@ -864,7 +880,14 @@ class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
         if SCContext.isPaused || SCContext.startTime == nil { return }
         
         // Always send microphone audio to mixer for streaming on track 0 (mixed with system audio)
-        Task { await SCContext.mixer?.append(sampleBuffer, track: 0) }
+        Task { 
+            await SCContext.mixer?.append(sampleBuffer, track: 0) 
+            if SCContext.mixer != nil {
+                let audioFormat = CMSampleBufferGetFormatDescription(sampleBuffer)
+                let sampleCount = CMSampleBufferGetNumSamples(sampleBuffer)
+                print("📣 [MIC-AV] Microphone audio sent to mixer track 0 - samples: \(sampleCount), format: \(audioFormat?.audioFormatList.first.debugDescription ?? "unknown")")
+            }
+        }
         
         // Always write to file if recording is enabled and we have the necessary components
         if ud.bool(forKey: "enableRecording") && SCContext.micInput != nil && SCContext.micInput.isReadyForMoreMediaData {
