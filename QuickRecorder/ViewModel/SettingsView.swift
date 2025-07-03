@@ -295,11 +295,30 @@ struct BlocklistView: View {
 
 struct BroadcastView: View {
     @AppStorage("enableRTMPStreaming") private var enableRTMPStreaming: Bool = false
+    @AppStorage("enableRecording") private var enableRecording: Bool = true
     @AppStorage("rtmpURL") private var rtmpURL: String = "rtmp://127.0.0.1:1935/live"
     @AppStorage("streamKey") private var streamKey: String = "live"
 
     var body: some View {
         SForm {
+            SGroupBox(label: "Recording") {
+                Toggle("Disable Recording", isOn: .init(
+                    get: { !enableRecording },
+                    set: { enableRecording = !$0 }
+                ))
+                
+                if !enableRecording && !enableRTMPStreaming {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.orange)
+                        Text("Warning: Both recording and streaming are disabled. No output will be generated.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            
             SGroupBox(label: "Broadcast") {
                 // ── enable streaming ──
                 Toggle("Enable RTMP Streaming", isOn: $enableRTMPStreaming)
