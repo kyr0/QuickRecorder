@@ -48,7 +48,6 @@
 		84A95F3D2E11E799006FA281 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84A95F3C2E11E799006FA281 /* HaishinKit */; };
 		84A95F3F2E11E799006FA281 /* MoQTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84A95F3E2E11E799006FA281 /* MoQTHaishinKit */; };
 		84A95F412E11E799006FA281 /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84A95F402E11E799006FA281 /* SRTHaishinKit */; };
-		84A95FA12E11FEA3006FA281 /* RTMPPusher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A95FA02E11FEA3006FA281 /* RTMPPusher.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -95,7 +94,6 @@
 		18FEBDAB2BD01E82003F09BC /* WinSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinSelector.swift; sourceTree = "<group>"; };
 		18FEBDAD2BD10ED1003F09BC /* ScreenSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSelector.swift; sourceTree = "<group>"; };
 		18FEBDAF2BD2C0D1003F09BC /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		84A95FA02E11FEA3006FA281 /* RTMPPusher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTMPPusher.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -158,7 +156,6 @@
 		18D3BDE92BCE5DC1006CFFC0 /* QuickRecorder */ = {
 			isa = PBXGroup;
 			children = (
-				84A95FA02E11FEA3006FA281 /* RTMPPusher.swift */,
 				189BD5E82BDE34B80056D06C /* InfoPlist.strings */,
 				189BD5F62BDFDF200056D06C /* Info.plist */,
 				18D3BDEA2BCE5DC1006CFFC0 /* QuickRecorderApp.swift */,
@@ -308,7 +305,6 @@
 				189BD5F52BDF8A800056D06C /* CameraOverlayer.swift in Sources */,
 				18F1A0E22BD3E4C000DB102C /* AreaSelector.swift in Sources */,
 				18FDFC8E2BDA435F0020E685 /* ScreenMagnifier.swift in Sources */,
-				84A95FA12E11FEA3006FA281 /* RTMPPusher.swift in Sources */,
 				187966FA2BD5639D003DB1B2 /* MousePointer.swift in Sources */,
 				184CAEC92BDDEC6800D61D57 /* AppBlockSelector.swift in Sources */,
 				184CAEC72BDCCC2300D61D57 /* AVContext.swift in Sources */,

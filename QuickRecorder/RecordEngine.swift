@@ -144,10 +144,6 @@ extension AppDelegate {
         SCContext.isPaused = false
         SCContext.isResume = false
         
-        //if (SCContext.rtmpPusher == nil) {
-        //    SCContext.rtmpPusher = RTMPPusher(endpoint: "rtmp://127.0.0.1:1935/live", name: "live", streamKey: "");
-        //}
-        
         let audioOnly = SCContext.streamType == .systemaudio
         
         let conf: SCStreamConfiguration
@@ -298,27 +294,6 @@ extension AppDelegate {
                 //SCContext.startTime = Date.now
                 if recordMic { startMicRecording() }
             }
-            /*
-            let mixer = MediaMixer()
-
-            guard
-                let session = await SessionBuilderFactory.shared
-                               .make(URL(string: "rtmp://127.0.0.1:1935/live"))?
-                               .build(),
-                let rtmp = await session.stream as? RTMPStream
-                    
-            else {
-                assertionFailure("unexpected stream type")
-                return
-            }
-            await mixer.addOutput(rtmp)
-
-            // register the bridge as SCStreamOutput, not the other way round!
-            let bridge = BridgeOutput(mixer: mixer)
-            try SCContext.stream.addStreamOutput(bridge,
-                                                 type: .screen,
-                                                 sampleHandlerQueue: .global())
-            */
            
             let mixer = MediaMixer()
             SCContext.mixer = mixer
@@ -641,8 +616,6 @@ extension AppDelegate {
                 if isPresenterON && !isCameraReady { break }
                 if SCContext.firstFrame == nil { SCContext.firstFrame = SampleBuffer }
                 SCContext.vwInput.append(SampleBuffer)
-                
-                //SCContext.rtmpPusher.append(SampleBuffer)
             }
             break
         case .audio:
@@ -655,7 +628,6 @@ extension AppDelegate {
                     SCContext.vW.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(SampleBuffer))
                 }
                 if SCContext.startTime == nil { SCContext.startTime = Date.now }
-                //SCContext.rtmpPusher.append(SampleBuffer)
                 guard let samples = SampleBuffer.asPCMBuffer else { return }
                 do { try SCContext.audioFile?.write(from: samples) }
                 catch { assertionFailure("audio file writing issue".local) }

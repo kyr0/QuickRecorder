@@ -508,7 +508,7 @@ func createAlert(level: NSAlert.Style = .warning, title: String, message: String
 }
 
 func showAlertSyncOnMainThread(level: NSAlert.Style = .warning, title: String, message: String, button1: String, button2: String = "", width: Int? = nil) -> NSApplication.ModalResponse {
-    var response: NSApplication.ModalResponse = .abortcompletion
+    var response: NSApplication.ModalResponse = .abort
     let semaphore = DispatchSemaphore(value: 0)
     
     DispatchQueue.main.async {
