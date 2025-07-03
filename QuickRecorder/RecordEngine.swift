@@ -342,8 +342,9 @@ extension AppDelegate {
 
                 // Configure mixer for offscreen video mixing (like the example)
                 var videoMixerSettings = await mixer.videoMixerSettings
-                videoMixerSettings.mode = .offscreen
+                videoMixerSettings.mode = .passthrough//.offscreen
                 videoMixerSettings.mainTrack = 0  // Screen capture will be on track 0
+                
                 await mixer.setVideoMixerSettings(videoMixerSettings)
                 
                 // Configure audio mixer for single-track mixing (all audio on track 0)
@@ -373,6 +374,30 @@ extension AppDelegate {
                     print("Failed to get RTMP stream from session")
                     return
                 }
+                
+                // Configure video codec settings based on user preferences and capture dimensions
+                let encoderIsH265 = (encoder.rawValue == Encoder.h265.rawValue) || recordHDR
+                
+                // Calculate bitrate based on resolution and frame rate (similar to file recording logic)
+                let fpsMultiplier: Double = Double(frameRate)/8
+                let encoderMultiplier: Double = encoderIsH265 ? 0.5 : 0.9
+                let resolution = Double(max(600, conf.width)) * Double(max(600, conf.height))
+                let targetBitrate = Int(resolution * fpsMultiplier * encoderMultiplier * (recordHDR ? 2 : 1))
+                
+            
+                // 2560 x 1440
+                let videoCodecSettings = VideoCodecSettings(
+                    videoSize: CGSize(width: 2560/*conf.width*/, height: 1440/* conf.height*/),
+                    bitRate: max(1000000, targetBitrate), // Minimum 1000kbps for streaming
+                    profileLevel: encoderIsH265 ? kVTProfileLevel_HEVC_Main_AutoLevel as String : kVTProfileLevel_H264_High_AutoLevel as String,
+                    maxKeyFrameIntervalDuration: 2,
+                    allowFrameReordering: false,
+                    isHardwareEncoderEnabled: true
+                )
+                
+                await rtmpStream.setVideoSettings(videoCodecSettings)
+                print("✅ RTMP video codec configured: \(encoderIsH265 ? "HEVC" : "H264"), \(conf.width)x\(conf.height), \(targetBitrate/1000)kbps")
+          
                 
                 SCContext.session = session
                 await mixer.addOutput(rtmpStream)
