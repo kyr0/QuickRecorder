@@ -409,7 +409,7 @@ extension AppDelegate {
                 
                 // Configure audio codec settings based on user preferences
                 let streamAudioCodec = ud.string(forKey: "streamAudioCodec") ?? "aac"
-                let streamAudioQuality = ud.string(forKey: "streamAudioQuality") ?? "high"
+                let streamAudioQuality = ud.string(forKey: "streamAudioQuality") ?? "normal"
                 
                 // Map audio quality to bitrate
                 let audioBitrate: Int
@@ -419,7 +419,7 @@ extension AppDelegate {
                 case "good": audioBitrate = 192000
                 case "high": audioBitrate = 256000
                 case "extreme": audioBitrate = 320000
-                default: audioBitrate = 128000 // Default to high quality
+                default: audioBitrate = 128000 // Default to normal quality (128kbps)
                 }
                 
                 // Configure audio codec settings

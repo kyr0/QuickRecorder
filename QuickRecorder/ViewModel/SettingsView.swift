@@ -316,15 +316,18 @@ struct BroadcastView: View {
 
     var body: some View {
         SForm {
-            SGroupBox(label: "Recording") {
+            
+            SGroupBox(label: "Broadcast") {
                 HStack {
+                    // ── enable streaming ──
+                    Toggle("RTMP Streaming", isOn: $enableRTMPStreaming)
+                    Spacer()
                     Toggle("Disable Recording (streaming only)", isOn: .init(
                         get: { !enableRecording },
                         set: { enableRecording = !$0 }
                     ))
-                    Spacer()
                 }
-                
+
                 if !enableRecording && !enableRTMPStreaming {
                     HStack {
                         Image(systemName: "exclamationmark.triangle")
@@ -335,21 +338,27 @@ struct BroadcastView: View {
                     }
                     .padding(.top, 4)
                 }
-            }
-            
-            SGroupBox(label: "Broadcast") {
-                // ── enable streaming ──
-                Toggle("Enable RTMP streaming", isOn: $enableRTMPStreaming)
                 
                 // ── input fields ──
-                TextField("RTMP stream URL", text: $rtmpURL)
-                    .textFieldStyle(.roundedBorder)
-                    .disabled(!enableRTMPStreaming)
+                HStack {
+                    Text("URL:")
+                    Spacer()
+                    TextField("RTMP stream URL", text: $rtmpURL)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(minWidth: 0, idealWidth: 200, alignment: .trailing)
+                        .disabled(!enableRTMPStreaming)
+                }
 
-                SecureField("Stream key", text: $streamKey)
-                    .textFieldStyle(.roundedBorder)
-                    .disabled(!enableRTMPStreaming)
-                
+                // ── stream key ──
+                HStack {
+                    Text("Stream key:")
+                    Spacer()
+                    SecureField("Stream key", text: $streamKey)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(minWidth: 0, idealWidth: 200, alignment: .trailing)
+                        .disabled(!enableRTMPStreaming)
+                }
+
                 if enableRTMPStreaming {
                     HStack {
                         Image(systemName: "info.circle")
