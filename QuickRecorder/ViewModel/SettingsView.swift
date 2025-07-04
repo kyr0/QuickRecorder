@@ -315,10 +315,13 @@ struct BroadcastView: View {
     var body: some View {
         SForm {
             SGroupBox(label: "Recording") {
-                Toggle("Disable Recording", isOn: .init(
-                    get: { !enableRecording },
-                    set: { enableRecording = !$0 }
-                ))
+                HStack {
+                    Toggle("Disable Recording (streaming only)", isOn: .init(
+                        get: { !enableRecording },
+                        set: { enableRecording = !$0 }
+                    ))
+                    Spacer()
+                }
                 
                 if !enableRecording && !enableRTMPStreaming {
                     HStack {
@@ -334,7 +337,7 @@ struct BroadcastView: View {
             
             SGroupBox(label: "Broadcast") {
                 // ── enable streaming ──
-                Toggle("Enable RTMP Streaming", isOn: $enableRTMPStreaming)
+                Toggle("Enable RTMP streaming", isOn: $enableRTMPStreaming)
                 
                 // ── input fields ──
                 TextField("RTMP stream URL", text: $rtmpURL)
