@@ -383,12 +383,12 @@ extension AppDelegate {
                 let encoderMultiplier: Double = encoderIsH265 ? 0.5 : 0.9
                 let resolution = Double(max(600, conf.width)) * Double(max(600, conf.height))
                 let targetBitrate = Int(resolution * fpsMultiplier * encoderMultiplier * (recordHDR ? 2 : 1))
-                
+                let automaticBitrate = Int(max(1000000, targetBitrate)) // Minimum 1000kbps for streaming
             
                 // 2560 x 1440
                 let videoCodecSettings = VideoCodecSettings(
                     videoSize: CGSize(width: 2560/*conf.width*/, height: 1440/* conf.height*/),
-                    bitRate: max(1000000, targetBitrate), // Minimum 1000kbps for streaming
+                    bitRate: automaticBitrate,
                     profileLevel: encoderIsH265 ? kVTProfileLevel_HEVC_Main_AutoLevel as String : kVTProfileLevel_H264_High_AutoLevel as String,
                     maxKeyFrameIntervalDuration: 2,
                     allowFrameReordering: false,
