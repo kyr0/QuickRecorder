@@ -300,11 +300,43 @@ struct StreamingView: View {
     @AppStorage("streamKey") private var streamKey: String = "live"
     @AppStorage("streamAutoBitrate") private var streamAutoBitrate: Bool = true
     @AppStorage("streamBitrate") private var streamBitrate: Int = 1000
-    @AppStorage("streamWidth") private var streamWidth: Int = 1920
-    @AppStorage("streamHeight") private var streamHeight: Int = 1080
+    @AppStorage("streamScaler") private var streamScaler: String = "1x"
     @AppStorage("streamCodec") private var streamCodec: String = ""
     @AppStorage("streamAudioCodec") private var streamAudioCodec: String = ""
     @AppStorage("streamAudioQuality") private var streamAudioQuality: String = ""
+    @AppStorage("frameRate") private var frameRate: Int = 30
+    
+    @FocusState private var isWidthFieldFocused: Bool
+    @FocusState private var isHeightFieldFocused: Bool
+    
+    // Get system screen resolution
+    var systemResolution: CGSize {
+        if let mainScreen = NSScreen.main {
+            return mainScreen.frame.size
+        }
+        return CGSize(width: 1920, height: 1080) // Fallback
+    }
+    
+    // Calculate streaming resolution based on scaler
+    var streamingResolution: CGSize {
+        let baseWidth = systemResolution.width
+        let baseHeight = systemResolution.height
+        
+        let multiplier: Double
+        switch streamScaler {
+        case "1x", "original": multiplier = 1.0
+        case "0.75x": multiplier = 0.75
+        case "0.5x": multiplier = 0.5
+        case "0.25x": multiplier = 0.25
+        default: multiplier = 1.0
+        }
+        
+        let width = Int(baseWidth * multiplier)
+        let height = Int(baseHeight * multiplier)
+        
+        // Ensure even numbers for encoder compatibility
+        return CGSize(width: width - (width % 2), height: height - (height % 2))
+    }
 
     var redactedStreamKey: String {
         guard streamKey.count > 2 else { return streamKey }
@@ -312,6 +344,23 @@ struct StreamingView: View {
         let last = streamKey.suffix(1)
         let asterisks = String(repeating: "*", count: min(streamKey.count - 2, 6))
         return "\(first)\(asterisks)\(last)"
+    }
+    
+    // Calculate automatic bitrate based on resolution, frame rate, and codec
+    func calculateAutomaticBitrate() -> Int {
+        let resolution = streamingResolution
+        let fpsMultiplier: Double = Double(frameRate) / 8
+        let encoderMultiplier: Double = (streamCodec == "h265") ? 0.5 : 0.9
+        let pixelCount = Double(max(600, Int(resolution.width))) * Double(max(600, Int(resolution.height)))
+        let targetBitrate = Int(pixelCount * fpsMultiplier * encoderMultiplier)
+        return max(1000, targetBitrate / 1000) // Convert to kbps and ensure minimum 1000kbps
+    }
+    
+    // Update automatic bitrate when relevant settings change
+    func updateAutomaticBitrate() {
+        if streamAutoBitrate {
+            streamBitrate = calculateAutomaticBitrate()
+        }
     }
 
     var body: some View {
@@ -372,42 +421,30 @@ struct StreamingView: View {
             }
             
             SGroupBox(label: "Stream Settings") {
-                // ── resolution settings ──
+                // ── resolution scaler ──
                 HStack {
-                    Text("Resolution:")
+                    Text("Resolution Scale:")
                     Spacer()
-                    TextField("Width", value: $streamWidth, format: .number)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 105)
-                        .disabled(!enableRTMPStreaming)
-                    Text("×")
-                    TextField("Height", value: $streamHeight, format: .number)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 105)
-                        .disabled(!enableRTMPStreaming)
+                    Picker("", selection: $streamScaler) {
+                        Text("Original").tag("1x")
+                        Text("Quarter smaller").tag("0.75x")
+                        Text("Half size").tag("0.5x")
+                        Text("An eighth").tag("0.25x")
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 240)
+                    .disabled(!enableRTMPStreaming)
+                    .onChange(of: streamScaler) { _ in updateAutomaticBitrate() }
                 }
                 
-                // Resolution validation warnings
-                if enableRTMPStreaming && (streamWidth < 640 || streamHeight < 640 || streamWidth % 2 != 0 || streamHeight % 2 != 0) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if streamWidth < 640 || streamHeight < 640 {
-                            HStack {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .foregroundColor(.orange)
-                                Text("Warning: Width and height should be at least 640px for optimal streaming quality.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        if streamWidth % 2 != 0 || streamHeight % 2 != 0 {
-                            HStack {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .foregroundColor(.orange)
-                                Text("Warning: Width and height should be multiples of 2 for video encoder compatibility.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
+                // Show actual streaming resolution
+                if enableRTMPStreaming {
+                    HStack {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.blue)
+                        Text("Streaming resolution: \(Int(streamingResolution.width))px × \(Int(streamingResolution.height))px")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                     .padding(.top, 2)
                 }
@@ -425,6 +462,7 @@ struct StreamingView: View {
                     .pickerStyle(.segmented)
                     .frame(width: 240)
                     .disabled(!enableRTMPStreaming)
+                    .onChange(of: streamCodec) { _ in updateAutomaticBitrate() }
                 }
                 
                 SDivider()
@@ -465,6 +503,7 @@ struct StreamingView: View {
                 // ── bitrate settings ──
                 Toggle("Automatic Bitrate Selection", isOn: $streamAutoBitrate)
                     .disabled(!enableRTMPStreaming)
+                    .onChange(of: streamAutoBitrate) { _ in updateAutomaticBitrate() }
                 
                 if !streamAutoBitrate {
                     HStack {
@@ -535,9 +574,12 @@ struct StreamingView: View {
                 case AudioQuality.extreme.rawValue:
                     streamAudioQuality = "extreme"
                 default:
-                    streamAudioQuality = "high" // Default to high quality
+                    streamAudioQuality = "normal" // Default to normal quality (128kbps)
                 }
             }
+            
+            // Calculate automatic bitrate on first load
+            updateAutomaticBitrate()
         }
     }
 }
