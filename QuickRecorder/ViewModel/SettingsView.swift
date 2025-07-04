@@ -513,8 +513,21 @@ struct BroadcastView: View {
             
             // Initialize stream audio quality based on main audio quality setting if not already set
             if streamAudioQuality.isEmpty {
-                let currentAudioQuality = ud.object(forKey: "audioQuality") as? String ?? AudioQuality.high.rawValue
-                streamAudioQuality = currentAudioQuality
+                let currentAudioQuality = ud.object(forKey: "audioQuality") as? Int ?? AudioQuality.high.rawValue
+                // Map AudioQuality enum values (bitrates) to streaming quality strings
+                // Note: "low" (64kbps) is streaming-only and not available in main Output settings
+                switch currentAudioQuality {
+                case AudioQuality.normal.rawValue:
+                    streamAudioQuality = "normal"
+                case AudioQuality.good.rawValue:
+                    streamAudioQuality = "good"
+                case AudioQuality.high.rawValue:
+                    streamAudioQuality = "high"
+                case AudioQuality.extreme.rawValue:
+                    streamAudioQuality = "extreme"
+                default:
+                    streamAudioQuality = "high" // Default to high quality
+                }
             }
         }
     }

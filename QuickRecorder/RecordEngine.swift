@@ -419,7 +419,7 @@ extension AppDelegate {
                 case "good": audioBitrate = 192000
                 case "high": audioBitrate = 256000
                 case "extreme": audioBitrate = 320000
-                default: audioBitrate = 256000 // Default to high quality
+                default: audioBitrate = 128000 // Default to high quality
                 }
                 
                 // Configure audio codec settings
