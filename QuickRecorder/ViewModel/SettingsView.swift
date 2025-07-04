@@ -298,6 +298,11 @@ struct BroadcastView: View {
     @AppStorage("enableRecording") private var enableRecording: Bool = true
     @AppStorage("rtmpURL") private var rtmpURL: String = "rtmp://127.0.0.1:1935/live"
     @AppStorage("streamKey") private var streamKey: String = "live"
+    @AppStorage("streamAutoBitrate") private var streamAutoBitrate: Bool = true
+    @AppStorage("streamBitrate") private var streamBitrate: Int = 1000
+    @AppStorage("streamWidth") private var streamWidth: Int = 1920
+    @AppStorage("streamHeight") private var streamHeight: Int = 1080
+    @AppStorage("streamCodec") private var streamCodec: String = "h264"
 
     var body: some View {
         SForm {
@@ -337,6 +342,78 @@ struct BroadcastView: View {
                         Image(systemName: "info.circle")
                             .foregroundColor(.blue)
                         Text("Full URL will be: \(rtmpURL)/\(streamKey)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            
+            SGroupBox(label: "Stream Settings") {
+                // ── resolution settings ──
+                HStack {
+                    Text("Resolution:")
+                    Spacer()
+                    TextField("Width", value: $streamWidth, format: .number)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                        .disabled(!enableRTMPStreaming)
+                    Text("×")
+                    TextField("Height", value: $streamHeight, format: .number)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                        .disabled(!enableRTMPStreaming)
+                }
+                
+                SDivider()
+                
+                // ── codec selection ──
+                HStack {
+                    Text("Video Codec:")
+                    Spacer()
+                    Picker("", selection: $streamCodec) {
+                        Text("H.264").tag("h264")
+                        Text("H.265 (HEVC)").tag("h265")
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 200)
+                    .disabled(!enableRTMPStreaming)
+                }
+                
+                SDivider()
+                
+                // ── bitrate settings ──
+                Toggle("Automatic Bitrate Selection", isOn: $streamAutoBitrate)
+                    .disabled(!enableRTMPStreaming)
+                
+                if !streamAutoBitrate {
+                    HStack {
+                        Text("Bitrate:")
+                        Spacer()
+                        TextField("Bitrate", value: $streamBitrate, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 100)
+                            .disabled(!enableRTMPStreaming)
+                        Text("kbps")
+                    }
+                    
+                    if streamBitrate < 1000 {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.orange)
+                            Text("Warning: Bitrate below 1000 kbps may result in poor stream quality.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.top, 2)
+                    }
+                }
+                
+                if enableRTMPStreaming && streamAutoBitrate {
+                    HStack {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.blue)
+                        Text("Bitrate will be automatically calculated based on resolution and codec.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

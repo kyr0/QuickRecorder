@@ -376,19 +376,26 @@ extension AppDelegate {
                 }
                 
                 // Configure video codec settings based on user preferences and capture dimensions
-                let encoderIsH265 = (encoder.rawValue == Encoder.h265.rawValue) || recordHDR
+                let streamAutoBitrate = ud.bool(forKey: "streamAutoBitrate")
+                let streamBitrate = ud.integer(forKey: "streamBitrate") != 0 ? ud.integer(forKey: "streamBitrate") : 1000
+                let streamWidth = ud.integer(forKey: "streamWidth") != 0 ? ud.integer(forKey: "streamWidth") : 1920
+                let streamHeight = ud.integer(forKey: "streamHeight") != 0 ? ud.integer(forKey: "streamHeight") : 1080
+                let streamCodec = ud.string(forKey: "streamCodec") ?? "h264"
+                let encoderIsH265 = (streamCodec == "h265") || recordHDR
                 
-                // Calculate bitrate based on resolution and frame rate (similar to file recording logic)
+                // Calculate automatic bitrate based on resolution and frame rate (similar to file recording logic)
                 let fpsMultiplier: Double = Double(frameRate)/8
                 let encoderMultiplier: Double = encoderIsH265 ? 0.5 : 0.9
-                let resolution = Double(max(600, conf.width)) * Double(max(600, conf.height))
+                let resolution = Double(max(600, streamWidth)) * Double(max(600, streamHeight))
                 let targetBitrate = Int(resolution * fpsMultiplier * encoderMultiplier * (recordHDR ? 2 : 1))
                 let automaticBitrate = Int(max(1000000, targetBitrate)) // Minimum 1000kbps for streaming
+                
+                // Use manual bitrate if automatic is disabled, otherwise use calculated bitrate
+                let finalBitrate = streamAutoBitrate ? automaticBitrate : (streamBitrate * 1000) // Convert kbps to bps
             
-                // 2560 x 1440
                 let videoCodecSettings = VideoCodecSettings(
-                    videoSize: CGSize(width: 2560/*conf.width*/, height: 1440/* conf.height*/),
-                    bitRate: automaticBitrate,
+                    videoSize: CGSize(width: streamWidth, height: streamHeight),
+                    bitRate: finalBitrate,
                     profileLevel: encoderIsH265 ? kVTProfileLevel_HEVC_Main_AutoLevel as String : kVTProfileLevel_H264_High_AutoLevel as String,
                     maxKeyFrameIntervalDuration: 2,
                     allowFrameReordering: false,
@@ -396,7 +403,7 @@ extension AppDelegate {
                 )
                 
                 await rtmpStream.setVideoSettings(videoCodecSettings)
-                print("✅ RTMP video codec configured: \(encoderIsH265 ? "HEVC" : "H264"), \(conf.width)x\(conf.height), \(targetBitrate/1000)kbps")
+                print("✅ RTMP video codec configured: \(encoderIsH265 ? "HEVC" : "H264"), \(streamWidth)x\(streamHeight), \(finalBitrate/1000)kbps, Auto: \(streamAutoBitrate)")
           
                 
                 SCContext.session = session
