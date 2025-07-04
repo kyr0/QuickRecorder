@@ -380,7 +380,9 @@ extension AppDelegate {
                 let streamBitrate = ud.integer(forKey: "streamBitrate") != 0 ? ud.integer(forKey: "streamBitrate") : 1000
                 let streamWidth = ud.integer(forKey: "streamWidth") != 0 ? ud.integer(forKey: "streamWidth") : 1920
                 let streamHeight = ud.integer(forKey: "streamHeight") != 0 ? ud.integer(forKey: "streamHeight") : 1080
-                let streamCodec = ud.string(forKey: "streamCodec") ?? "h264"
+                
+                // Use the codec from stream settings, but fall back to the main encoder setting from Output tab
+                let streamCodec = ud.string(forKey: "streamCodec") ?? (encoder.rawValue == Encoder.h265.rawValue ? "h265" : "h264")
                 let encoderIsH265 = (streamCodec == "h265") || recordHDR
                 
                 // Calculate automatic bitrate based on resolution and frame rate (similar to file recording logic)

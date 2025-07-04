@@ -302,7 +302,15 @@ struct BroadcastView: View {
     @AppStorage("streamBitrate") private var streamBitrate: Int = 1000
     @AppStorage("streamWidth") private var streamWidth: Int = 1920
     @AppStorage("streamHeight") private var streamHeight: Int = 1080
-    @AppStorage("streamCodec") private var streamCodec: String = "h264"
+    @AppStorage("streamCodec") private var streamCodec: String = ""
+
+    var redactedStreamKey: String {
+        guard streamKey.count > 2 else { return streamKey }
+        let first = streamKey.prefix(1)
+        let last = streamKey.suffix(1)
+        let asterisks = String(repeating: "*", count: min(streamKey.count - 2, 6))
+        return "\(first)\(asterisks)\(last)"
+    }
 
     var body: some View {
         SForm {
@@ -341,7 +349,7 @@ struct BroadcastView: View {
                     HStack {
                         Image(systemName: "info.circle")
                             .foregroundColor(.blue)
-                        Text("Full URL will be: \(rtmpURL)/\(streamKey)")
+                        Text("Full URL will be: \(rtmpURL)/\(redactedStreamKey)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -419,6 +427,13 @@ struct BroadcastView: View {
                     }
                     .padding(.top, 4)
                 }
+            }
+        }
+        .onAppear {
+            // Initialize stream codec based on main encoder setting if not already set
+            if streamCodec.isEmpty {
+                let currentEncoder = ud.object(forKey: "encoder") as? String ?? Encoder.h265.rawValue
+                streamCodec = currentEncoder == Encoder.h265.rawValue ? "h265" : "h264"
             }
         }
     }
