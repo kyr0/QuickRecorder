@@ -406,6 +406,38 @@ extension AppDelegate {
                 
                 await rtmpStream.setVideoSettings(videoCodecSettings)
                 print("✅ RTMP video codec configured: \(encoderIsH265 ? "HEVC" : "H264"), \(streamWidth)x\(streamHeight), \(finalBitrate/1000)kbps, Auto: \(streamAutoBitrate)")
+                
+                // Configure audio codec settings based on user preferences
+                let streamAudioCodec = ud.string(forKey: "streamAudioCodec") ?? "aac"
+                let streamAudioQuality = ud.string(forKey: "streamAudioQuality") ?? "high"
+                
+                // Map audio quality to bitrate
+                let audioBitrate: Int
+                switch streamAudioQuality {
+                case "low": audioBitrate = 64000
+                case "normal": audioBitrate = 128000
+                case "good": audioBitrate = 192000
+                case "high": audioBitrate = 256000
+                case "extreme": audioBitrate = 320000
+                default: audioBitrate = 256000 // Default to high quality
+                }
+                
+                // Configure audio codec settings
+                var audioCodecSettings = AudioCodecSettings()
+                audioCodecSettings.bitRate = audioBitrate
+                
+                // Set the audio codec based on user selection
+                switch streamAudioCodec {
+                case "opus":
+                    audioCodecSettings.format = .opus
+                case "aac":
+                    fallthrough
+                default:
+                    audioCodecSettings.format = .aac
+                }
+                
+                await rtmpStream.setAudioSettings(audioCodecSettings)
+                print("✅ RTMP audio codec configured: \(streamAudioCodec.uppercased()), \(audioBitrate/1000)kbps")
           
                 
                 SCContext.session = session

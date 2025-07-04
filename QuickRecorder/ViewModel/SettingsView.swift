@@ -303,6 +303,8 @@ struct BroadcastView: View {
     @AppStorage("streamWidth") private var streamWidth: Int = 1920
     @AppStorage("streamHeight") private var streamHeight: Int = 1080
     @AppStorage("streamCodec") private var streamCodec: String = ""
+    @AppStorage("streamAudioCodec") private var streamAudioCodec: String = ""
+    @AppStorage("streamAudioQuality") private var streamAudioQuality: String = ""
 
     var redactedStreamKey: String {
         guard streamKey.count > 2 else { return streamKey }
@@ -418,6 +420,39 @@ struct BroadcastView: View {
                 
                 SDivider()
                 
+                // ── audio codec selection ──
+                HStack {
+                    Text("Audio Codec:")
+                    Spacer()
+                    Picker("", selection: $streamAudioCodec) {
+                        Text("AAC").tag("aac")
+                        Text("Opus").tag("opus")
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 200)
+                    .disabled(!enableRTMPStreaming)
+                }
+                
+                SDivider()
+                
+                // ── audio quality selection ──
+                HStack {
+                    Text("Audio Quality:")
+                    Spacer()
+                    Picker("", selection: $streamAudioQuality) {
+                        Text("Low - 64Kbps").tag("low")
+                        Text("Normal - 128Kbps").tag("normal")
+                        Text("Good - 192Kbps").tag("good")
+                        Text("High - 256Kbps").tag("high")
+                        Text("Extreme - 320Kbps").tag("extreme")
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 200)
+                    .disabled(!enableRTMPStreaming)
+                }
+                
+                SDivider()
+                
                 // ── bitrate settings ──
                 Toggle("Automatic Bitrate Selection", isOn: $streamAutoBitrate)
                     .disabled(!enableRTMPStreaming)
@@ -462,6 +497,24 @@ struct BroadcastView: View {
             if streamCodec.isEmpty {
                 let currentEncoder = ud.object(forKey: "encoder") as? String ?? Encoder.h265.rawValue
                 streamCodec = currentEncoder == Encoder.h265.rawValue ? "h265" : "h264"
+            }
+            
+            // Initialize stream audio codec based on main audio format setting if not already set
+            if streamAudioCodec.isEmpty {
+                let currentAudioFormat = ud.object(forKey: "audioFormat") as? String ?? AudioFormat.aac.rawValue
+                // Map audio formats to streaming-compatible codecs
+                switch currentAudioFormat {
+                case AudioFormat.opus.rawValue:
+                    streamAudioCodec = "opus"
+                default:
+                    streamAudioCodec = "aac" // Default to AAC for mp3, aac, alac, flac
+                }
+            }
+            
+            // Initialize stream audio quality based on main audio quality setting if not already set
+            if streamAudioQuality.isEmpty {
+                let currentAudioQuality = ud.object(forKey: "audioQuality") as? String ?? AudioQuality.high.rawValue
+                streamAudioQuality = currentAudioQuality
             }
         }
     }
