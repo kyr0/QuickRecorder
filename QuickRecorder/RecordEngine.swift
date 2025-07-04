@@ -666,69 +666,68 @@ extension AppDelegate {
     }
     
     func startMicRecording() {
-        if micDevice == "default" {
-            if enableAEC {
-                var level = AUVoiceIOOtherAudioDuckingLevel.mid
-                switch AECLevel {
-                    case "min": level = .min
-                    case "max": level = .max
-                    default: level = .mid
-                }
-                try? SCContext.AECEngine.startAudioStream(enableAEC: enableAEC, duckingLevel: level, audioBufferHandler: { pcmBuffer in
-                    if SCContext.isPaused || SCContext.startTime == nil { return }
-                    
-                    // Always send microphone audio to mixer for streaming on track 0 (mixed with system audio)
-                    if let sampleBuffer = pcmBuffer.asSampleBuffer {
-                        Task { 
-                            await SCContext.mixer?.append(sampleBuffer, track: 0) 
-                            if SCContext.mixer != nil {
-                                print("📣 [MIC-AEC] Microphone audio sent to mixer track 0 - format: \(pcmBuffer.format), frames: \(pcmBuffer.frameLength)")
-                            }
-                        }
-                    }
-                    
-                    // Always write to file if recording is enabled and we have the necessary components
-                    if ud.bool(forKey: "enableRecording") && SCContext.micInput != nil && SCContext.micInput.isReadyForMoreMediaData {
-                        var sampleBufferToWrite = pcmBuffer.asSampleBuffer!
-                        // Apply timing adjustment if needed (same as video samples)
-                        if SCContext.timeOffset.value > 0 {
-                            sampleBufferToWrite = SCContext.adjustTime(sample: sampleBufferToWrite, by: SCContext.timeOffset) ?? sampleBufferToWrite
-                        }
-                        SCContext.micInput.append(sampleBufferToWrite)
-                        print("Microphone sample written to file (AEC mode)")
-                    }
-                })
-                SCContext.aecEngineStarted = true
-            } else {
-                let input = SCContext.audioEngine.inputNode
-                let inputFormat = input.inputFormat(forBus: 0)
-                input.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { buffer, time in
-                    if SCContext.isPaused || SCContext.startTime == nil { return }
-                    
-                    // Always send microphone audio to mixer for streaming on track 0 (mixed with system audio)
-                    if let sampleBuffer = buffer.asSampleBuffer {
-                        print("📣 [MIC] Sending mic audio to mixer track 0 - format: \(buffer.format), frames: \(buffer.frameLength)")
-                        Task { await SCContext.mixer?.append(sampleBuffer, track: 0) }
-                        
-                    }
-                    
-                    // Always write to file if recording is enabled and we have the necessary components
-                    if ud.bool(forKey: "enableRecording") && SCContext.micInput != nil && SCContext.micInput.isReadyForMoreMediaData {
-                        var sampleBufferToWrite = buffer.asSampleBuffer!
-                        // Apply timing adjustment if needed (same as video samples)
-                        if SCContext.timeOffset.value > 0 {
-                            sampleBufferToWrite = SCContext.adjustTime(sample: sampleBufferToWrite, by: SCContext.timeOffset) ?? sampleBufferToWrite
-                        }
-                        SCContext.micInput.append(sampleBufferToWrite)
-                        print("Microphone sample written to file (AudioEngine mode)")
-                    }
-                }
-                try! SCContext.audioEngine.start()
+        if enableAEC {
+            var level = AUVoiceIOOtherAudioDuckingLevel.mid
+            switch AECLevel {
+                case "min": level = .min
+                case "max": level = .max
+                default: level = .mid
             }
+            try? SCContext.AECEngine.startAudioStream(enableAEC: enableAEC, duckingLevel: level, audioBufferHandler: { pcmBuffer in
+                if SCContext.isPaused || SCContext.startTime == nil { return }
+                
+                // Always send microphone audio to mixer for streaming on track 0 (mixed with system audio)
+                if let sampleBuffer = pcmBuffer.asSampleBuffer {
+                    Task { 
+                        await SCContext.mixer?.append(sampleBuffer, track: 0) 
+                        if SCContext.mixer != nil {
+                            print("📣 [MIC-AEC] Microphone audio sent to mixer track 0 - format: \(pcmBuffer.format), frames: \(pcmBuffer.frameLength)")
+                        }
+                    }
+                }
+                
+                // Always write to file if recording is enabled and we have the necessary components
+                if ud.bool(forKey: "enableRecording") && SCContext.micInput != nil && SCContext.micInput.isReadyForMoreMediaData {
+                    var sampleBufferToWrite = pcmBuffer.asSampleBuffer!
+                    // Apply timing adjustment if needed (same as video samples)
+                    if SCContext.timeOffset.value > 0 {
+                        sampleBufferToWrite = SCContext.adjustTime(sample: sampleBufferToWrite, by: SCContext.timeOffset) ?? sampleBufferToWrite
+                    }
+                    SCContext.micInput.append(sampleBufferToWrite)
+                    print("Microphone sample written to file (AEC mode)")
+                }
+            })
+            SCContext.aecEngineStarted = true
         } else {
-            AudioRecorder.shared.setupAudioCapture()
-            AudioRecorder.shared.start()
-        }
+            let input = SCContext.audioEngine.inputNode
+            let inputFormat = input.inputFormat(forBus: 0)
+            input.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { buffer, time in
+                if SCContext.isPaused || SCContext.startTime == nil { return }
+                
+                // Always send microphone audio to mixer for streaming on track 0 (mixed with system audio)
+                if let sampleBuffer = buffer.asSampleBuffer {
+                    print("📣 [MIC] Sending mic audio to mixer track 0 - format: \(buffer.format), frames: \(buffer.frameLength)")
+                    Task { await SCContext.mixer?.append(sampleBuffer, track: 0) }
+                    
+                }
+                
+                // Always write to file if recording is enabled and we have the necessary components
+                if ud.bool(forKey: "enableRecording") && SCContext.micInput != nil && SCContext.micInput.isReadyForMoreMediaData {
+                    var sampleBufferToWrite = buffer.asSampleBuffer!
+                    // Apply timing adjustment if needed (same as video samples)
+                    if SCContext.timeOffset.value > 0 {
+                        sampleBufferToWrite = SCContext.adjustTime(sample: sampleBufferToWrite, by: SCContext.timeOffset) ?? sampleBufferToWrite
+                    }
+                    SCContext.micInput.append(sampleBufferToWrite)
+                    print("Microphone sample written to file (AudioEngine mode)")
+                }
+            }
+            try! SCContext.audioEngine.start()
+        
+        } 
+        //    AudioRecorder.shared.setupAudioCapture()
+        //    AudioRecorder.shared.start()
+        
     }
     
     func outputVideoEffectDidStart(for stream: SCStream) {
