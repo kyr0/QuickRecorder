@@ -379,35 +379,73 @@ extension AppDelegate {
                 let streamBitrate = ud.integer(forKey: "streamBitrate") != 0 ? ud.integer(forKey: "streamBitrate") : 1000
                 let streamScaler = ud.string(forKey: "streamScaler") ?? "1x"
                 
-                // Calculate streaming resolution based on scaler and system screen resolution
-                let systemResolution: CGSize
-                if let mainScreen = NSScreen.main {
-                    systemResolution = mainScreen.frame.size
+                // Calculate streaming resolution based on the actual capture context and scaler
+                var baseResolution: CGSize
+                if let screen = SCContext.screen {
+                    baseResolution = screen.frame.size
+                    let backingScale = screen.nsScreen?.backingScaleFactor ?? 1.0
+                    baseResolution.width = baseResolution.width * backingScale
+                    baseResolution.height = baseResolution.height * backingScale
+                } else if let window = SCContext.window?.first {
+                    baseResolution = window.frame.size
+                } else if let application = SCContext.application?.first {
+                    // For applications, use the screen size as base
+                    baseResolution = (SCContext.screen ?? SCContext.getSCDisplayWithMouse()!).frame.size
                 } else {
-                    systemResolution = CGSize(width: 1920, height: 1080) // Fallback
+                    // Fallback to main screen
+                    baseResolution = NSScreen.main?.frame.size ?? CGSize(width: 1920, height: 1080)
                 }
                 
+                // Apply scaler multiplier
                 let multiplier: Double
                 switch streamScaler {
-                case "Original": multiplier = 1.0
-                case "Quarter smaller": multiplier = 0.75
-                case "Half size": multiplier = 0.5
-                case "An eighth": multiplier = 0.25
+                case "1x", "original": multiplier = 1.0
+                case "0.75x": multiplier = 0.75
+                case "0.5x": multiplier = 0.5
+                case "0.25x": multiplier = 0.25
                 default: multiplier = 1.0
                 }
                 
-                let streamWidth = Int(systemResolution.width * multiplier)
-                let streamHeight = Int(systemResolution.height * multiplier)
-                // Ensure even numbers for encoder compatibility
-                let finalStreamWidth = streamWidth - (streamWidth % 2)
-                let finalStreamHeight = streamHeight - (streamHeight % 2)
+                var finalStreamWidth = Int(baseResolution.width * multiplier)
+                var finalStreamHeight = Int(baseResolution.height * multiplier)
                 
+                // Ensure even numbers for encoder compatibility
+                finalStreamWidth = finalStreamWidth - (finalStreamWidth % 2)
+                finalStreamHeight = finalStreamHeight - (finalStreamHeight % 2)
+
+                print("🔄 Streaming resolution calculated: \(Int(baseResolution.width))x\(Int(baseResolution.height)) (base) → \(finalStreamWidth)x\(finalStreamHeight) (scaler: \(streamScaler))")
+
                 // Use the codec from stream settings, but fall back to the main encoder setting from Output tab
                 let streamCodec = ud.string(forKey: "streamCodec") ?? (encoder.rawValue == Encoder.h265.rawValue ? "h265" : "h264")
                 let encoderIsH265 = (streamCodec == "h265") || recordHDR
                 
-                // Use the bitrate from SettingsView (which calculates automatic bitrate when enabled)
-                let finalBitrate = streamBitrate * 1000 // Convert kbps to bps
+                // Calculate automatic bitrate if enabled, using the actual streaming resolution
+                let streamAutoBitrate = ud.bool(forKey: "streamAutoBitrate")
+                var finalBitrate = streamBitrate * 1000 // Convert kbps to bps
+                
+                if streamAutoBitrate {
+                    let frameRate = ud.integer(forKey: "frameRate") != 0 ? ud.integer(forKey: "frameRate") : 30
+                    let fpsMultiplier: Double = Double(frameRate) / 8
+                    let encoderMultiplier: Double = (streamCodec == "h265") ? 0.5 : 0.9
+                    let pixelCount = Double(max(600, finalStreamWidth)) * Double(max(600, finalStreamHeight))
+                    
+                    // Adjust for retina displays - slightly reduce multiplier since we have higher pixel density
+                    var qualityMultiplier: Double = 1.0
+                    if let mainScreen = NSScreen.main, mainScreen.backingScaleFactor > 1.0 {
+                        qualityMultiplier = 0.8
+                    }
+                    
+                    let targetBitrate = Int(pixelCount * fpsMultiplier * encoderMultiplier * qualityMultiplier)
+                    let calculatedBitrate = max(1000, targetBitrate / 1000) // Convert to kbps and ensure minimum 1000kbps
+                    finalBitrate = calculatedBitrate * 1000 // Convert back to bps
+                    
+                    print("🔄 Automatic bitrate calculated: \(calculatedBitrate)kbps (based on \(finalStreamWidth)x\(finalStreamHeight), \(frameRate)fps, \(streamCodec))")
+                    
+                    // Update the stored bitrate value for UI consistency
+                    ud.set(calculatedBitrate, forKey: "streamBitrate")
+                } else {
+                    print("📊 Using manual bitrate: \(streamBitrate)kbps")
+                }
             
                 let videoCodecSettings = VideoCodecSettings(
                     videoSize: CGSize(width: finalStreamWidth, height: finalStreamHeight),
