@@ -1,12 +1,12 @@
 {
   "images" : [
     {
-      "filename" : "broadcast@1x.png",
+      "filename" : "streaming@1x.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "broadcast.png",
+      "filename" : "streaming.png",
       "idiom" : "universal",
       "scale" : "2x"
     },

@@ -32,8 +32,8 @@ struct SettingsView: View {
                 NavigationLink(destination: BlocklistView(), tag: "Blacklist", selection: $selectedItem) {
                     Label("Blocklist", image: "blacklist")
                 }
-                NavigationLink(destination: BroadcastView(), tag: "Broadcast", selection: $selectedItem) {
-                    Label("Broadcast", image: "broadcast")
+                NavigationLink(destination: StreamingView(), tag: "Streaming", selection: $selectedItem) {
+                    Label("Streaming", image: "streaming")
                 }
             }
             .listStyle(.sidebar)
@@ -213,8 +213,8 @@ struct OutputView: View {
                 }.disabled(withAlpha)
                 SDivider()
                 SPicker("Encoder", selection: $encoder) {
-                    Text("H.264").tag(Encoder.h264)
-                    Text("H.265").tag(Encoder.h265)
+                    Text("H.264 (AVC)").tag(Encoder.h264)
+                    Text("H.265 (HEVC)").tag(Encoder.h265)
                 }.disabled(withAlpha)
                 SDivider()
                 SToggle("Recording with Alpha Channel", isOn: $withAlpha)
@@ -293,7 +293,7 @@ struct BlocklistView: View {
     }
 }
 
-struct BroadcastView: View {
+struct StreamingView: View {
     @AppStorage("enableRTMPStreaming") private var enableRTMPStreaming: Bool = false
     @AppStorage("enableRecording") private var enableRecording: Bool = true
     @AppStorage("rtmpURL") private var rtmpURL: String = "rtmp://127.0.0.1:1935/live"
@@ -317,7 +317,7 @@ struct BroadcastView: View {
     var body: some View {
         SForm {
             
-            SGroupBox(label: "Broadcast") {
+            SGroupBox(label: "Streaming") {
                 HStack {
                     // ── enable streaming ──
                     Toggle("RTMP Streaming", isOn: $enableRTMPStreaming)
@@ -345,7 +345,7 @@ struct BroadcastView: View {
                     Spacer()
                     TextField("RTMP stream URL", text: $rtmpURL)
                         .textFieldStyle(.roundedBorder)
-                        .frame(minWidth: 0, idealWidth: 200, alignment: .trailing)
+                        .frame(width: 240)
                         .disabled(!enableRTMPStreaming)
                 }
 
@@ -353,9 +353,9 @@ struct BroadcastView: View {
                 HStack {
                     Text("Stream key:")
                     Spacer()
-                    SecureField("Stream key", text: $streamKey)
+                    SecureField("Stream Key", text: $streamKey)
                         .textFieldStyle(.roundedBorder)
-                        .frame(minWidth: 0, idealWidth: 200, alignment: .trailing)
+                        .frame(width: 240)
                         .disabled(!enableRTMPStreaming)
                 }
 
@@ -378,12 +378,12 @@ struct BroadcastView: View {
                     Spacer()
                     TextField("Width", value: $streamWidth, format: .number)
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 80)
+                        .frame(width: 105)
                         .disabled(!enableRTMPStreaming)
                     Text("×")
                     TextField("Height", value: $streamHeight, format: .number)
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 80)
+                        .frame(width: 105)
                         .disabled(!enableRTMPStreaming)
                 }
                 
@@ -419,11 +419,11 @@ struct BroadcastView: View {
                     Text("Video Codec:")
                     Spacer()
                     Picker("", selection: $streamCodec) {
-                        Text("H.264").tag("h264")
+                        Text("H.264 (AVC)").tag("h264")
                         Text("H.265 (HEVC)").tag("h265")
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 200)
+                    .frame(width: 240)
                     .disabled(!enableRTMPStreaming)
                 }
                 
@@ -438,7 +438,7 @@ struct BroadcastView: View {
                         Text("Opus").tag("opus")
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 200)
+                    .frame(width: 240)
                     .disabled(!enableRTMPStreaming)
                 }
                 
@@ -456,7 +456,7 @@ struct BroadcastView: View {
                         Text("Extreme - 320Kbps").tag("extreme")
                     }
                     .pickerStyle(.menu)
-                    .frame(width: 200)
+                    .frame(width: 240)
                     .disabled(!enableRTMPStreaming)
                 }
                 
