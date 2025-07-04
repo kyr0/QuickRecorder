@@ -373,6 +373,31 @@ struct BroadcastView: View {
                         .disabled(!enableRTMPStreaming)
                 }
                 
+                // Resolution validation warnings
+                if enableRTMPStreaming && (streamWidth < 640 || streamHeight < 640 || streamWidth % 2 != 0 || streamHeight % 2 != 0) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if streamWidth < 640 || streamHeight < 640 {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundColor(.orange)
+                                Text("Warning: Width and height should be at least 640px for optimal streaming quality.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        if streamWidth % 2 != 0 || streamHeight % 2 != 0 {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundColor(.orange)
+                                Text("Warning: Width and height should be multiples of 2 for video encoder compatibility.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .padding(.top, 2)
+                }
+                
                 SDivider()
                 
                 // ── codec selection ──
