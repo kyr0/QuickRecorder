@@ -413,7 +413,37 @@ extension AppDelegate {
                 finalStreamWidth = finalStreamWidth - (finalStreamWidth % 2)
                 finalStreamHeight = finalStreamHeight - (finalStreamHeight % 2)
 
-                print("🔄 Streaming resolution calculated: \(Int(baseResolution.width))x\(Int(baseResolution.height)) (base) → \(finalStreamWidth)x\(finalStreamHeight) (scaler: \(streamScaler))")
+                // Auto-correlate to closest standard aspect ratio size
+                let standardSizes: [(width: Int, height: Int, name: String)] = [
+                    (7680, 4320, "4320p (8K)"),
+                    (3840, 2160, "2160p (4K)"),
+                    (2560, 1440, "1440p (2K)"),
+                    (1920, 1080, "1080p (HD)"),
+                    (1280, 720, "720p (HD)"),
+                    (854, 480, "480p (SD)"),
+                    (640, 360, "360p (SD)"),
+                    (426, 240, "240p (SD)")
+                ]
+                
+                // Find the closest standard size based on total pixel count
+                let currentPixelCount = finalStreamWidth * finalStreamHeight
+                var closestSize = standardSizes.last! // Default to smallest size
+                var smallestDifference = Int.max
+                
+                for size in standardSizes {
+                    let sizePixelCount = size.width * size.height
+                    let difference = abs(currentPixelCount - sizePixelCount)
+                    if difference < smallestDifference {
+                        smallestDifference = difference
+                        closestSize = size
+                    }
+                }
+                
+                // Update to standard size
+                finalStreamWidth = closestSize.width
+                finalStreamHeight = closestSize.height
+
+                print("🔄 Streaming resolution calculated: \(Int(baseResolution.width))x\(Int(baseResolution.height)) (base) → \(finalStreamWidth)x\(finalStreamHeight) (\(closestSize.name), scaler: \(streamScaler))")
 
                 // Use the codec from stream settings, but fall back to the main encoder setting from Output tab
                 let streamCodec = ud.string(forKey: "streamCodec") ?? (encoder.rawValue == Encoder.h265.rawValue ? "h265" : "h264")
