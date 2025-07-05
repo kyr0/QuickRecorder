@@ -711,7 +711,7 @@ extension AppDelegate {
                     Task { 
                         await SCContext.mixer?.append(sampleBuffer, track: 0) 
                         if SCContext.mixer != nil {
-                            print("📣 [MIC-AEC] Microphone audio sent to mixer track 0 - format: \(pcmBuffer.format), frames: \(pcmBuffer.frameLength)")
+                            //print("📣 [MIC-AEC] Microphone audio sent to mixer track 0 - format: \(pcmBuffer.format), frames: \(pcmBuffer.frameLength)")
                         }
                     }
                 }
@@ -724,7 +724,7 @@ extension AppDelegate {
                         sampleBufferToWrite = SCContext.adjustTime(sample: sampleBufferToWrite, by: SCContext.timeOffset) ?? sampleBufferToWrite
                     }
                     SCContext.micInput.append(sampleBufferToWrite)
-                    print("Microphone sample written to file (AEC mode)")
+                    //print("Microphone sample written to file (AEC mode)")
                 }
             })
             SCContext.aecEngineStarted = true
@@ -736,7 +736,7 @@ extension AppDelegate {
                 
                 // Always send microphone audio to mixer for streaming on track 0 (mixed with system audio)
                 if let sampleBuffer = buffer.asSampleBuffer {
-                    print("📣 [MIC] Sending mic audio to mixer track 0 - format: \(buffer.format), frames: \(buffer.frameLength)")
+                   // print("📣 [MIC] Sending mic audio to mixer track 0 - format: \(buffer.format), frames: \(buffer.frameLength)")
                     Task { await SCContext.mixer?.append(sampleBuffer, track: 0) }
                     
                 }
@@ -749,7 +749,7 @@ extension AppDelegate {
                         sampleBufferToWrite = SCContext.adjustTime(sample: sampleBufferToWrite, by: SCContext.timeOffset) ?? sampleBufferToWrite
                     }
                     SCContext.micInput.append(sampleBufferToWrite)
-                    print("Microphone sample written to file (AudioEngine mode)")
+                    //print("Microphone sample written to file (AudioEngine mode)")
                 }
             }
             try! SCContext.audioEngine.start()
@@ -913,7 +913,7 @@ extension AppDelegate {
                 if SCContext.mixer != nil {
                     let audioFormat = CMSampleBufferGetFormatDescription(SampleBuffer)
                     let sampleCount = CMSampleBufferGetNumSamples(SampleBuffer)
-                    print("🔊 [SYS] System audio sent to mixer track 0 - samples: \(sampleCount), format: \(audioFormat?.audioFormatList.first.debugDescription ?? "unknown")")
+                    //print("🔊 [SYS] System audio sent to mixer track 0 - samples: \(sampleCount), format: \(audioFormat?.audioFormatList.first.debugDescription ?? "unknown")")
                 }
             }
             
@@ -1032,7 +1032,7 @@ class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
             if SCContext.mixer != nil {
                 let audioFormat = CMSampleBufferGetFormatDescription(sampleBuffer)
                 let sampleCount = CMSampleBufferGetNumSamples(sampleBuffer)
-                print("📣 [MIC-AV] Microphone audio sent to mixer track 0 - samples: \(sampleCount), format: \(audioFormat?.audioFormatList.first.debugDescription ?? "unknown")")
+                //print("📣 [MIC-AV] Microphone audio sent to mixer track 0 - samples: \(sampleCount), format: \(audioFormat?.audioFormatList.first.debugDescription ?? "unknown")")
             }
         }
         
@@ -1044,7 +1044,7 @@ class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
                 sampleBufferToWrite = SCContext.adjustTime(sample: sampleBufferToWrite, by: SCContext.timeOffset) ?? sampleBufferToWrite
             }
             SCContext.micInput.append(sampleBufferToWrite)
-            print("Microphone sample written to file (AVCapture mode)")
+            //print("Microphone sample written to file (AVCapture mode)")
         }
     }
 }
