@@ -296,7 +296,8 @@ struct BlocklistView: View {
 struct StreamingView: View {
     @AppStorage("enableRTMPStreaming") private var enableRTMPStreaming: Bool = false
     @AppStorage("enableRecording") private var enableRecording: Bool = true
-    @AppStorage("rtmpURL") private var rtmpURL: String = "rtmp://127.0.0.1:1935/live"
+    @AppStorage("streamingService") private var streamingService: String = "youTube"
+    @AppStorage("rtmpURL") private var rtmpURL: String = "rtmp://a.rtmp.youtube.com/live2"
     @AppStorage("streamKey") private var streamKey: String = "live"
     @AppStorage("streamAutoBitrate") private var streamAutoBitrate: Bool = true
     @AppStorage("streamBitrate") private var streamBitrate: Int = 1000
@@ -336,6 +337,45 @@ struct StreamingView: View {
                             .foregroundColor(.secondary)
                     }
                     .padding(.top, 4)
+                }
+                
+                // ── streaming service selector ──
+                HStack {
+                    Text("Service:")
+                    Spacer()
+                    Picker("", selection: $streamingService) {
+                        Text("Custom").tag("custom")
+                        Text("YouTube").tag("youTube")
+                        Text("Twitch").tag("twitch")
+                        Text("Facebook").tag("facebook")
+                        Text("TikTok").tag("tiktok")
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 240)
+                    .disabled(!enableRTMPStreaming)
+                    .onChange(of: streamingService) { service in
+                        switch service {
+                        case "youTube":
+                            rtmpURL = "rtmp://a.rtmp.youtube.com/live2"
+                            streamCodec = "h265"  // YouTube prefers H.264
+                            streamAudioCodec = "aac"
+                        case "twitch":
+                            rtmpURL = "rtmp://live.twitch.tv/live"
+                            streamCodec = "h265"  // Twitch requires H.264
+                            streamAudioCodec = "aac"
+                        case "facebook":
+                            rtmpURL = "rtmps://live-api-s.facebook.com:443/rtmp"
+                            streamCodec = "h265"  // Facebook prefers H.264
+                            streamAudioCodec = "aac"
+                        case "tiktok":
+                            rtmpURL = "rtmp://push.live.tiktok.com/live"
+                            streamCodec = "h265"  // TikTok uses H.264
+                            streamAudioCodec = "aac"
+                        default: // custom
+                            rtmpURL = "rtmp://127.0.0.1:1935/live"
+                            // Keep current codec settings for custom
+                        }
+                    }
                 }
                 
                 // ── input fields ──
